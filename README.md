@@ -1,1 +1,3 @@
-# datastax-demo-lib
+# DataStax Demo Library
+
+

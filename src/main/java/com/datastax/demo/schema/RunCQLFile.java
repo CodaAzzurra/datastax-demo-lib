@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 public abstract class RunCQLFile {
 
 	private static Logger logger = LoggerFactory.getLogger(RunCQLFile.class);
-	
+
 	static String CREATE_KEYSPACE;
 	static String DROP_KEYSPACE;
 
@@ -19,10 +19,10 @@ public abstract class RunCQLFile {
 	private String CQL_FILE;
 
 	RunCQLFile(String cqlFile) {
-		
+
 		System.out.println("Running file " + cqlFile);
 		this.CQL_FILE = cqlFile;
-		
+
 		String contactPointsStr = System.getProperty("contactPoints");
 		if (contactPointsStr == null) {
 			contactPointsStr = "127.0.0.1";
@@ -31,29 +31,29 @@ public abstract class RunCQLFile {
 		cluster = Cluster.builder().addContactPoints(contactPointsStr.split(",")).build();
 		session = cluster.connect();
 	}
-	
+
 	void internalSetup() {
-		this.runfile();		
+		this.runfile();
 	}
-	
+
 	void runfile() {
 		String readFileIntoString = FileUtils.readFileIntoString(CQL_FILE);
-		
+
 		String[] commands = readFileIntoString.split(";");
-		
-		for (String command : commands){
-			
+
+		for (String command : commands) {
+
 			String cql = command.trim();
-			
-			if (cql.isEmpty()){
+
+			if (cql.isEmpty()) {
 				continue;
 			}
-			
-			if (cql.toLowerCase().startsWith("drop")){
+
+			if (cql.toLowerCase().startsWith("drop")) {
 				this.runAllowFail(cql);
-			}else{
+			} else {
 				this.run(cql);
-			}			
+			}
 		}
 	}
 
@@ -65,7 +65,7 @@ public abstract class RunCQLFile {
 		}
 	}
 
-	void run(String cql){
+	void run(String cql) {
 		logger.info("Running : " + cql);
 		session.execute(cql);
 	}
@@ -77,7 +77,7 @@ public abstract class RunCQLFile {
 		}
 	}
 
-	
+
 	void shutdown() {
 		session.close();
 		cluster.close();

@@ -11,9 +11,12 @@ import org.slf4j.LoggerFactory;
 
 public abstract class RunCQLFile {
 
-	public static final String CONTACT_POINTS_PROPNAME = "contactPoints";
 	private static Logger logger = LoggerFactory.getLogger(RunCQLFile.class);
+
+	private static final String CONTACT_POINTS_PROP_NAME = "contactPoints";
+	private static final String CONTACT_POINTS_SEP = ",";
 	private static final String CONTACT_POINTS_DEFAULT = "127.0.0.1";
+	private static final String CQL_LINE_SEP = ";";
 
 	private Cluster cluster;
 	private Session session;
@@ -25,19 +28,24 @@ public abstract class RunCQLFile {
 		this.cqlPath = cqlPath;
 	}
 
-	void internalSetup() {
+	void execute() {
 
-		String contactPointsStr = PropertyHelper.getProperty(CONTACT_POINTS_PROPNAME, CONTACT_POINTS_DEFAULT);
-		cluster = Cluster.builder().addContactPoints(contactPointsStr.split(",")).build();
+		String contactPointsStr = PropertyHelper.getProperty(CONTACT_POINTS_PROP_NAME, CONTACT_POINTS_DEFAULT);
+		cluster = Cluster.builder().addContactPoints(contactPointsStr.split(CONTACT_POINTS_SEP)).build();
 		session = cluster.connect();
-
 		executeFile();
 	}
 
-	private void executeFile() {
-		String readFileIntoString = FileUtils.readFileIntoString(cqlPath);
+	void shutdown() {
 
-		String[] commands = readFileIntoString.split(";");
+		session.close();
+		cluster.close();
+	}
+
+	private void executeFile() {
+
+		String readFileIntoString = FileUtils.readFileIntoString(cqlPath);
+		String[] commands = readFileIntoString.split(CQL_LINE_SEP);
 
 		for (String command : commands) {
 
@@ -48,38 +56,30 @@ public abstract class RunCQLFile {
 			}
 
 			boolean ignoreFailure = cql.toLowerCase().startsWith("drop");
-			executeLine(cql, ignoreFailure);
-		}
-	}
-
-	private void executeLine(String cql, boolean ignoreFailure) {
-
-		try {
-			logger.info("Executing: " + cql);
-			session.execute(cql);
-		}
-		catch (InvalidQueryException e) {
 
 			if (ignoreFailure) {
-				logger.info("Ignoring exception: ", e);
+				executeLineIgnoreFailure(cql);
 			}
 			else {
-				throw e;
+				executeLine(cql);
 			}
 		}
 	}
 
-	void sleep(int i) {
-		try {
-			Thread.sleep(i);
-		}
-		catch (Exception e) {
-		}
+	private void executeLine(String cql) {
+
+		logger.info("Executing: " + cql);
+		session.execute(cql);
 	}
 
-	void shutdown() {
-		session.close();
-		cluster.close();
+	private void executeLineIgnoreFailure(String cql) {
+
+		try {
+			executeLine(cql);
+		}
+		catch (InvalidQueryException e) {
+			logger.info("Ignoring exception.", e);
+		}
 	}
 
 	static String getOptionalArgument(String[] args, String defaultValue) {

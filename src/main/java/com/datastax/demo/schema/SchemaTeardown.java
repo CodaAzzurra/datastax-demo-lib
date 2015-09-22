@@ -12,7 +12,7 @@ public class SchemaTeardown extends RunCQLFile {
 
 		String cqlPath = getOptionalArgument(args, CQL_FILE_PATH_DEFAULT);
 		SchemaTeardown teardown = new SchemaTeardown(cqlPath);
-		teardown.internalSetup();
+		teardown.execute();
 		teardown.shutdown();
 	}
 }

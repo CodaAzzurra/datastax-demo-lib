@@ -12,7 +12,7 @@ public class SchemaSetup extends RunCQLFile {
 
 		String cqlPath = getOptionalArgument(args, CQL_FILE_PATH_DEFAULT);
 		SchemaSetup setup = new SchemaSetup(cqlPath);
-		setup.internalSetup();
+		setup.execute();
 		setup.shutdown();
 	}
 }

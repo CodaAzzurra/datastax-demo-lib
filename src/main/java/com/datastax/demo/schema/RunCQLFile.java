@@ -1,43 +1,41 @@
 package com.datastax.demo.schema;
 
 import com.datastax.demo.utils.FileUtils;
+import com.datastax.demo.utils.PropertyHelper;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class RunCQLFile {
 
+	public static final String CONTACT_POINTS_PROPNAME = "contactPoints";
 	private static Logger logger = LoggerFactory.getLogger(RunCQLFile.class);
-
-	static String CREATE_KEYSPACE;
-	static String DROP_KEYSPACE;
+	private static final String CONTACT_POINTS_DEFAULT = "127.0.0.1";
 
 	private Cluster cluster;
 	private Session session;
-	private String CQL_FILE;
+	private String cqlPath;
 
-	RunCQLFile(String cqlFile) {
+	RunCQLFile(String cqlPath) {
 
-		System.out.println("Running file " + cqlFile);
-		this.CQL_FILE = cqlFile;
-
-		String contactPointsStr = System.getProperty("contactPoints");
-		if (contactPointsStr == null) {
-			contactPointsStr = "127.0.0.1";
-		}
-
-		cluster = Cluster.builder().addContactPoints(contactPointsStr.split(",")).build();
-		session = cluster.connect();
+		logger.info("Running CQL in file: " + cqlPath);
+		this.cqlPath = cqlPath;
 	}
 
 	void internalSetup() {
-		this.runfile();
+
+		String contactPointsStr = PropertyHelper.getProperty(CONTACT_POINTS_PROPNAME, CONTACT_POINTS_DEFAULT);
+		cluster = Cluster.builder().addContactPoints(contactPointsStr.split(",")).build();
+		session = cluster.connect();
+
+		executeFile();
 	}
 
-	void runfile() {
-		String readFileIntoString = FileUtils.readFileIntoString(CQL_FILE);
+	private void executeFile() {
+		String readFileIntoString = FileUtils.readFileIntoString(cqlPath);
 
 		String[] commands = readFileIntoString.split(";");
 
@@ -49,37 +47,52 @@ public abstract class RunCQLFile {
 				continue;
 			}
 
-			if (cql.toLowerCase().startsWith("drop")) {
-				this.runAllowFail(cql);
-			} else {
-				this.run(cql);
+			boolean ignoreFailure = cql.toLowerCase().startsWith("drop");
+			executeLine(cql, ignoreFailure);
+		}
+	}
+
+	private void executeLine(String cql, boolean ignoreFailure) {
+
+		try {
+			logger.info("Executing: " + cql);
+			session.execute(cql);
+		}
+		catch (InvalidQueryException e) {
+
+			if (ignoreFailure) {
+				logger.info("Ignoring exception: ", e);
+			}
+			else {
+				throw e;
 			}
 		}
-	}
-
-	void runAllowFail(String cql) {
-		try {
-			run(cql);
-		} catch (InvalidQueryException e) {
-			logger.info("Ignoring exception - " + e.getMessage());
-		}
-	}
-
-	void run(String cql) {
-		logger.info("Running : " + cql);
-		session.execute(cql);
 	}
 
 	void sleep(int i) {
 		try {
 			Thread.sleep(i);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 		}
 	}
-
 
 	void shutdown() {
 		session.close();
 		cluster.close();
+	}
+
+	static String getOptionalArgument(String[] args, String defaultValue) {
+
+		String cqlPath;
+
+		if (args.length > 0 && StringUtils.isNotBlank(args[0])) {
+			cqlPath = args[0];
+		}
+		else {
+			cqlPath = defaultValue;
+		}
+
+		return cqlPath;
 	}
 }

@@ -2,14 +2,17 @@ package com.datastax.demo.schema;
 
 public class SchemaTeardown extends RunCQLFile {
 
-	SchemaTeardown(String cqlFile) {
-		super(cqlFile);
+	private static final String CQL_FILE_PATH_DEFAULT = "cql/drop_schema.cql";
+
+	SchemaTeardown(String cqlPath) {
+		super(cqlPath);
 	}
 
 	public static void main(String args[]) {
 
-		SchemaTeardown setup = new SchemaTeardown("cql/drop_schema.cql");
-		setup.internalSetup();
-		setup.shutdown();
+		String cqlPath = getOptionalArgument(args, CQL_FILE_PATH_DEFAULT);
+		SchemaTeardown teardown = new SchemaTeardown(cqlPath);
+		teardown.internalSetup();
+		teardown.shutdown();
 	}
 }

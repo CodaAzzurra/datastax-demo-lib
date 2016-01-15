@@ -9,7 +9,8 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class RunCQLFile {
+public abstract class RunCQLFile
+{
 
 	private static Logger logger = LoggerFactory.getLogger(RunCQLFile.class);
 
@@ -22,74 +23,81 @@ public abstract class RunCQLFile {
 	private Session session;
 	private String cqlPath;
 
-	RunCQLFile(String cqlPath) {
-
+	RunCQLFile(String cqlPath)
+	{
 		logger.info("Running CQL in file: " + cqlPath);
 		this.cqlPath = cqlPath;
 	}
 
-	void execute() {
-
+	void execute()
+	{
 		String contactPointsStr = PropertyHelper.getProperty(CONTACT_POINTS_PROP_NAME, CONTACT_POINTS_DEFAULT);
 		cluster = Cluster.builder().addContactPoints(contactPointsStr.split(CONTACT_POINTS_SEP)).build();
 		session = cluster.connect();
 		executeFile();
 	}
 
-	void shutdown() {
-
+	void shutdown()
+	{
 		session.close();
 		cluster.close();
 	}
 
-	private void executeFile() {
-
+	private void executeFile()
+	{
 		String readFileIntoString = FileUtils.readFileIntoString(cqlPath);
 		String[] commands = readFileIntoString.split(CQL_LINE_SEP);
 
-		for (String command : commands) {
-
+		for (String command : commands)
+		{
 			String cql = command.trim();
 
-			if (cql.isEmpty()) {
+			if (cql.isEmpty())
+			{
 				continue;
 			}
 
 			boolean ignoreFailure = cql.toLowerCase().startsWith("drop");
 
-			if (ignoreFailure) {
+			if (ignoreFailure)
+			{
 				executeLineIgnoreFailure(cql);
 			}
-			else {
+			else
+			{
 				executeLine(cql);
 			}
 		}
 	}
 
-	private void executeLine(String cql) {
-
+	private void executeLine(String cql)
+	{
 		logger.info("Executing: " + cql);
 		session.execute(cql);
 	}
 
-	private void executeLineIgnoreFailure(String cql) {
-
-		try {
+	private void executeLineIgnoreFailure(String cql)
+	{
+		try
+		{
 			executeLine(cql);
 		}
-		catch (InvalidQueryException e) {
+		catch (InvalidQueryException e)
+		{
 			logger.info("Ignoring exception.", e);
 		}
 	}
 
-	static String getOptionalArgument(String[] args, String defaultValue) {
-
+	static String getOptionalArgument(String[] args, String defaultValue)
+	{
 		String cqlPath;
 
-		if (args.length > 0 && StringUtils.isNotBlank(args[0])) {
+		if (args.length > 0 && StringUtils.isNotBlank(args[0]))
+		{
 			cqlPath = args[0];
 		}
-		else {
+		else
+		{
 			cqlPath = defaultValue;
 		}
 

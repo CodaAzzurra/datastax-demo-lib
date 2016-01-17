@@ -1,13 +1,16 @@
 package com.datastax.demo.schema;
 
-import com.datastax.demo.utils.FileUtils;
 import com.datastax.demo.utils.PropertyHelper;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
 
 public abstract class RunCQLFile
 {
@@ -29,7 +32,7 @@ public abstract class RunCQLFile
 		this.cqlPath = cqlPath;
 	}
 
-	void execute()
+	void execute() throws IOException
 	{
 		String contactPointsStr = PropertyHelper.getProperty(CONTACT_POINTS_PROP_NAME, CONTACT_POINTS_DEFAULT);
 		cluster = Cluster.builder().addContactPoints(contactPointsStr.split(CONTACT_POINTS_SEP)).build();
@@ -43,9 +46,10 @@ public abstract class RunCQLFile
 		cluster.close();
 	}
 
-	private void executeFile()
+	private void executeFile() throws IOException
 	{
-		String readFileIntoString = FileUtils.readFileIntoString(cqlPath);
+		File cqlFile = new File(cqlPath);
+		String readFileIntoString = FileUtils.readFileToString(cqlFile);
 		String[] commands = readFileIntoString.split(CQL_LINE_SEP);
 
 		for (String command : commands)
